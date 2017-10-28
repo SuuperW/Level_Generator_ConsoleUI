@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Level_Generator_Console
+namespace Level_Generator_ConsoleUI
 {
 	class Program
 	{

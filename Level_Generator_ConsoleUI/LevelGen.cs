@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 using PR2_Level_Generator;
 
-namespace Level_Generator_Console
+namespace Level_Generator_ConsoleUI
 {
 	// Master class
 	class LevelGen
@@ -201,6 +201,8 @@ namespace Level_Generator_Console
 			Type t = Type.GetType(args[0]);
 			if (t == null)
 				t = Type.GetType("PR2_Level_Generator." + args[0] + ", PR2_Level_Generator");
+			if (t == null)
+				t = Type.GetType("Level_Generator_ConsoleUI." + args[0]);
 
 			if (t == null)
 				return "Invalid type given. Use command 'types' for a list of available types.";

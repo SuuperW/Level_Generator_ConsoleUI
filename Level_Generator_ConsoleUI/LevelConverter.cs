@@ -5,7 +5,7 @@ using System.Text;
 
 using PR2_Level_Generator;
 
-namespace Level_Generator_Console
+namespace Level_Generator_ConsoleUI
 {
     class LevelConverter
     {
