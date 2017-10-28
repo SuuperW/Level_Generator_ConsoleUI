@@ -131,12 +131,22 @@ namespace Level_Generator_ConsoleUI
 
 		private string GetInfo(params string[] args)
 		{
-			JObject json = new JObject();
-			json["Generator Type"] = GenType;
-			json["Generator Params"] = GetGeneratorParams();
-			json["Map Settings"] = GetMapSettings();
+			string ret = "";
+			if (args.Length == 0)
+				ret = "To view only generator params, use -info gen. To view only map settings, use -info map.\n";
 
-			return json.ToString();
+			JObject json = new JObject();
+			if (args.Length == 0 || args.Contains("type"))
+				json["Generator Type"] = GenType;
+			if (args.Length == 0 || args.Contains("gen"))
+				json["Generator Params"] = GetGeneratorParams();
+			if (args.Length == 0 || args.Contains("map"))
+				json["Map Settings"] = GetMapSettings();
+
+			if (json.Count == 0)
+				return "Valid arguments for info command are 'type', 'gen', and 'map'. Alternatively, use no arguments to get all info.";
+
+			return ret + json.ToString();
 		}
 		private JObject GetGeneratorParams()
 		{
