@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="PR2_Level_Generator">
+      <HintPath>..\..\PR2_Level_Generator\PR2_Level_Generator\bin\Debug\netcoreapp2.0\PR2_Level_Generator.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
