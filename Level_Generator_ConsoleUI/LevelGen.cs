@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Collections.Generic;
 
 using PR2_Level_Generator;
+using Newtonsoft.Json.Linq;
 
 namespace Level_Generator_ConsoleUI
 {
@@ -130,30 +131,30 @@ namespace Level_Generator_ConsoleUI
 
 		private string GetInfo(params string[] args)
 		{
-			StringBuilder str = new StringBuilder();
-			str.Append("Generator Type: " + GenType);
-			str.Append("\n\n" + GetGeneratorParams());
-			str.Append("\n\n" + GetMapSettings());
+			JObject json = new JObject();
+			json["Generator Type"] = GenType;
+			json["Generator Params"] = GetGeneratorParams();
+			json["Map Settings"] = GetMapSettings();
 
-			return str.ToString();
+			return json.ToString();
 		}
-		private string GetGeneratorParams()
+		private JObject GetGeneratorParams()
 		{
-			StringBuilder str = new StringBuilder("Paramaters: ");
+			JObject json = new JObject();
 			string[] paramNames = Generator.GetParamNames();
 			for (int i = 0; i < paramNames.Length; i++)
-				str.Append("\n" + paramNames[i] + ": " + Generator.GetParamValue(paramNames[i]).ToString("R"));
+				json[paramNames[i]] = Generator.GetParamValue(paramNames[i]);
 
-			return str.ToString();
+			return json;
 		}
-		private string GetMapSettings()
+		private JObject GetMapSettings()
 		{
-			StringBuilder str = new StringBuilder("Map Settings: ");
+			JObject json = new JObject();
 			string[] settingNames = Generator.Map.SettingNames;
 			for (int i = 0; i < settingNames.Length; i++)
-				str.Append("\n" + settingNames[i] + ": " + Generator.Map.GetSetting(settingNames[i]));
+				json[settingNames[i]] = Generator.Map.GetSetting(settingNames[i]);
 
-			return str.ToString();
+			return json;
 		}
 
 		private string GetSettings(params string[] args)
@@ -359,15 +360,7 @@ namespace Level_Generator_ConsoleUI
 			if (!Directory.GetParent(path).Exists)
 				return "Failed to save settings; directory does not exist.";
 
-			StringBuilder str = new StringBuilder(GenType);
-			string[] paramNames = Generator.GetParamNames();
-			for (int i = 0; i < paramNames.Length; i++)
-				str.Append("\n" + paramNames[i] + ": " + Generator.GetParamValue(paramNames[i]).ToString("R"));
-			string[] settingNames = Generator.Map.SettingNames;
-			for (int i = 0; i < settingNames.Length; i++)
-				str.Append("\n" + settingNames[i] + ": " + Generator.Map.GetSetting(settingNames[i]));
-
-			File.WriteAllText(path, str.ToString());
+			File.WriteAllText(path, GetInfo());
 
 			return "Settings saved.";
 		}
@@ -381,16 +374,14 @@ namespace Level_Generator_ConsoleUI
 			if (!File.Exists(path))
 				return "Failed to load settings; file does not exist.";
 
-			string[] str = File.ReadAllText(path).Split('\n');
-			Type t = Type.GetType(str[0]);
-			// How do I set generator to be a new instance of type t?
+			JObject json = JObject.Parse(File.ReadAllText(path));
+			Type t = Type.GetType(json["Generator Type"].ToString());
 			Generator = Activator.CreateInstance(t) as ILevelGenerator;
-			int settingCount = Generator.GetParamNames().Length + Generator.Map.SettingNames.Length;
-			for (int i = 1; i < settingCount + 1; i++)
-			{
-				string[] nameValue = str[i].Split(':');
-				SetSettings(nameValue[0], nameValue[1]);
-			}
+
+			foreach (JProperty j in json["Generator Params"])
+				SetSettings(j.Name, j.Value.ToString());
+			foreach (JProperty j in json["Map Settings"])
+				SetSettings(j.Name, j.Value.ToString());
 
 			return "Settings loaded.";
 		}
