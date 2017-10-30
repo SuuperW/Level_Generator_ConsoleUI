@@ -258,17 +258,7 @@ namespace Level_Generator_ConsoleUI
 			else
 			{
 				// Append parameters to the note.
-				double? oldSeed = null;
-				if (Generator.GetParamNames().Contains("Seed"))
-				{
-					oldSeed = Generator.GetParamValue("seed");
-					Generator.SetParamValue("seed", Generator.LastSeed);
-				}
-				string oldNote = Map.GetSetting("note");
-				Map.SetSetting("note", oldNote + "Gen: " + Generator.GetType().ToString().Split('.').Last() +
-					"\n" + GetInfo("gen").Replace("\r\n", "\n").Replace(" ", ""));
-				if (oldSeed != null)
-					Generator.SetParamValue("seed", oldSeed.Value);
+				string oldNote = SetLevelNote();
 
 				string ret = generationManager.UploadLevel();
 				Map.SetSetting("note", oldNote);
@@ -276,6 +266,15 @@ namespace Level_Generator_ConsoleUI
 			}
 		}
 		private string GetSaveData()
+		{
+			// Append parameters to the note.
+			string oldNote = SetLevelNote();
+
+			string ret = Map.GetData();
+			Map.SetSetting("note", oldNote);
+			return ret;
+		}
+		private string SetLevelNote()
 		{
 			// Append parameters to the note.
 			double? oldSeed = null;
@@ -289,9 +288,7 @@ namespace Level_Generator_ConsoleUI
 			if (oldSeed != null)
 				Generator.SetParamValue("seed", oldSeed.Value);
 
-			string ret = Map.GetData();
-			Map.SetSetting("note", oldNote);
-			return ret;
+			return oldNote;
 		}
 		private string SaveLevel(params string[] args)
 		{
