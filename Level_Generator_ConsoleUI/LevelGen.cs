@@ -135,36 +135,18 @@ namespace Level_Generator_ConsoleUI
 			if (args.Length == 0)
 				ret = "To view only generator params, use -info gen. To view only map settings, use -info map.\n";
 
-			JObject json = new JObject();
-			if (args.Length == 0 || args.Contains("type"))
-				json["Generator Type"] = GenType;
-			if (args.Length == 0 || args.Contains("gen"))
-				json["Generator Params"] = GetGeneratorParams();
-			if (args.Length == 0 || args.Contains("map"))
-				json["Map Settings"] = GetMapSettings();
+			JObject json = generationManager.GetSaveObject();
+			if (args.Length > 0 && !args.Contains("type"))
+				json.Remove("Generator Type");
+			if (args.Length > 0 && !args.Contains("gen"))
+				json.Remove("Generator Params");
+			if (args.Length > 0 && !args.Contains("map"))
+				json.Remove("Map Settings");
 
 			if (json.Count == 0)
 				return "Valid arguments for info command are 'type', 'gen', and 'map'. Alternatively, use no arguments to get all info.";
 
 			return ret + json.ToString();
-		}
-		private JObject GetGeneratorParams()
-		{
-			JObject json = new JObject();
-			string[] paramNames = Generator.GetParamNames();
-			for (int i = 0; i < paramNames.Length; i++)
-				json[paramNames[i]] = Generator.GetParamValue(paramNames[i]);
-
-			return json;
-		}
-		private JObject GetMapSettings()
-		{
-			JObject json = new JObject();
-			string[] settingNames = Generator.Map.SettingNames;
-			for (int i = 0; i < settingNames.Length; i++)
-				json[settingNames[i]] = Generator.Map.GetSetting(settingNames[i]);
-
-			return json;
 		}
 
 		private string GetSettings(params string[] args)
@@ -274,7 +256,24 @@ namespace Level_Generator_ConsoleUI
 			if (string.IsNullOrEmpty(generationManager.login_token) || string.IsNullOrEmpty(generationManager.username))
 				return "Please set a username and login token.";
 			else
-				return generationManager.UploadLevel();
+			{
+				// Append parameters to the note.
+				double? oldSeed = null;
+				if (Generator.GetParamNames().Contains("Seed"))
+				{
+					oldSeed = Generator.GetParamValue("seed");
+					Generator.SetParamValue("seed", Generator.LastSeed);
+				}
+				string oldNote = Map.GetSetting("note");
+				Map.SetSetting("note", oldNote + "Gen: " + Generator.GetType().ToString().Split('.').Last() +
+					"\n" + GetInfo("gen").Replace("\r\n", "\n").Replace(" ", ""));
+				if (oldSeed != null)
+					Generator.SetParamValue("seed", oldSeed.Value);
+
+				string ret = generationManager.UploadLevel();
+				Map.SetSetting("note", oldNote);
+				return ret;
+			}
 		}
 		private string GetSaveData()
 		{
@@ -286,7 +285,7 @@ namespace Level_Generator_ConsoleUI
 				Generator.SetParamValue("seed", Generator.LastSeed);
 			}
 			string oldNote = Map.GetSetting("note");
-			Map.SetSetting("note", oldNote + "Gen: " + GenType.Split('.').Last() + "\n" + GetGeneratorParams());
+			Map.SetSetting("note", oldNote + "Gen: " + GenType.Split('.').Last() + "\n" + GetInfo("gen"));
 			if (oldSeed != null)
 				Generator.SetParamValue("seed", oldSeed.Value);
 
@@ -370,7 +369,7 @@ namespace Level_Generator_ConsoleUI
 			if (!Directory.GetParent(path).Exists)
 				return "Failed to save settings; directory does not exist.";
 
-			File.WriteAllText(path, GetInfo());
+			generationManager.SaveSettings(path);
 
 			return "Settings saved.";
 		}
@@ -384,14 +383,7 @@ namespace Level_Generator_ConsoleUI
 			if (!File.Exists(path))
 				return "Failed to load settings; file does not exist.";
 
-			JObject json = JObject.Parse(File.ReadAllText(path));
-			Type t = Type.GetType(json["Generator Type"].ToString());
-			Generator = Activator.CreateInstance(t) as ILevelGenerator;
-
-			foreach (JProperty j in json["Generator Params"])
-				SetSettings(j.Name, j.Value.ToString());
-			foreach (JProperty j in json["Map Settings"])
-				SetSettings(j.Name, j.Value.ToString());
+			generationManager.LoadSettings(path);
 
 			return "Settings loaded.";
 		}
