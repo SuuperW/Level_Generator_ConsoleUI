@@ -257,39 +257,11 @@ namespace Level_Generator_ConsoleUI
 				return "Please set a username and login token.";
 			else
 			{
-				// Append parameters to the note.
-				string oldNote = SetLevelNote();
-
-				string ret = generationManager.UploadLevel();
-				Map.SetSetting("note", oldNote);
+				string ret = generationManager.UploadLevel().Result;
 				return ret;
 			}
 		}
-		private string GetSaveData()
-		{
-			// Append parameters to the note.
-			string oldNote = SetLevelNote();
 
-			string ret = Map.GetData();
-			Map.SetSetting("note", oldNote);
-			return ret;
-		}
-		private string SetLevelNote()
-		{
-			// Append parameters to the note.
-			double? oldSeed = null;
-			if (Generator.GetParamNames().Contains("Seed"))
-			{
-				oldSeed = Generator.GetParamValue("seed");
-				Generator.SetParamValue("seed", Generator.LastSeed);
-			}
-			string oldNote = Map.GetSetting("note");
-			Map.SetSetting("note", oldNote + "Gen: " + GenType.Split('.').Last() + "\n" + GetInfo("gen"));
-			if (oldSeed != null)
-				Generator.SetParamValue("seed", oldSeed.Value);
-
-			return oldNote;
-		}
 		private string SaveLevel(params string[] args)
 		{
 			if (args.Length < 1)
@@ -303,10 +275,10 @@ namespace Level_Generator_ConsoleUI
 			if (!Directory.GetParent(path).Exists)
 				return "Failed to save level; directory does not exist.";
 
-			string LData = GetSaveData();
-			File.WriteAllText(path, LData);
-
-			return "Level saved.";
+			if (generationManager.SaveLevel(path))
+				return "Level saved.";
+			else
+				return "Error; save failed.";
 		}
 		private string SaveLevelAsPR3(params string[] args)
 		{
