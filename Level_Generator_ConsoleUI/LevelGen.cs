@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Linq;
 using System.Text;
-using System.Net;
 using System.IO;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 using PR2_Level_Generator;
 using Newtonsoft.Json.Linq;
@@ -64,6 +65,8 @@ namespace Level_Generator_ConsoleUI
 		private string GenType
 		{ get { return Generator.GetType().AssemblyQualifiedName; } }
 		private MapLE Map { get { return Generator.Map; } }
+
+		CancellationTokenSource cts;
 
 		public void Main(string[] args)
 		{
@@ -213,8 +216,12 @@ namespace Level_Generator_ConsoleUI
 
 		private string GenerateLevel(params string[] args)
 		{
-			Generator.GenerateMap();
-			return null;
+			cts = new CancellationTokenSource(args.Length > 0 ? int.Parse(args[0]) : -1);
+			bool result = Generator.GenerateMap(cts).Result;
+			if (result)
+				return null;
+			else
+				return "Generation was cancelled due to taking too long.";
 		}
 
 		private string SetToken(params string[] args)

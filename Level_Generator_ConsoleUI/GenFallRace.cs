@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+
 using PR2_Level_Generator;
 
 namespace Level_Generator_ConsoleUI
@@ -81,7 +83,7 @@ namespace Level_Generator_ConsoleUI
 		public int LastSeed { get; private set; }
 		private Random R;
 
-		public void GenerateMap()
+		public Task<bool> GenerateMap(CancellationTokenSource cts)
 		{
 			Map.ClearBlocks();
 			Map.artCodes[3] = "";
@@ -128,6 +130,7 @@ namespace Level_Generator_ConsoleUI
 			}
 
 			Console.WriteLine("Map Generated.");
+			return Task.FromResult(true);
 		}
 
 		private void GenerateSection(int i)
