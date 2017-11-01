@@ -118,7 +118,12 @@ namespace Level_Generator_ConsoleUI
 
 			// Main loop
 			for (int i = 0; i < Sections; i++)
+			{
 				GenerateSection(i);
+
+				if (cts.IsCancellationRequested)
+					return Task.FromResult(false);
+			}
 
 			// Finish
 			Map.ReplaceBlock(start, height - 4, BlockID.Finish);

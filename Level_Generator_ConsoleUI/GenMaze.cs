@@ -164,8 +164,19 @@ namespace Level_Generator_ConsoleUI
 
         Random R;
         public int LastSeed { get; private set; }
+
+		CancellationTokenSource cts;
+
         public Task<bool> GenerateMap(CancellationTokenSource cts)
         {
+			this.cts = cts;
+
+			if (Sq_Size > 1000 || Size > 100000)
+			{
+				Console.WriteLine("GenMaze will not generate mazes that large!");
+				return Task.FromResult(true); // true because it was not cancelled
+			}
+
             int rSeed = Seed;
             if (rSeed == 0)
                 rSeed = Environment.TickCount;
@@ -176,6 +187,9 @@ namespace Level_Generator_ConsoleUI
             roomMade = new bool[0][];
 
             Generate();
+			if (cts.IsCancellationRequested)
+				return Task.FromResult(false);
+
             // Add the stuff onto DataStr (m3, BG, etc.)
             Map.BGC = 0x00111111;
             Map.artCodes[8] = ArtStr;
@@ -231,6 +245,9 @@ namespace Level_Generator_ConsoleUI
                         branchableRooms.Add(currentRoom);
                     } while (R.NextDouble() > Branch); // continue this branch until RNG says stop
                 }
+
+				if (cts.IsCancellationRequested)
+					return;
             }
 
             // Special stuffs
@@ -240,6 +257,9 @@ namespace Level_Generator_ConsoleUI
                 {
                     for (int iY = 0; iY < Size; iY++)
                         fillRoom(iX, iY);
+
+					if (cts.IsCancellationRequested)
+						return;
                 }
             }
             placeCeilingBlocks();
@@ -250,6 +270,9 @@ namespace Level_Generator_ConsoleUI
             } while (Finish == Start);
             Map.ReplaceBlock(Finish.X * Sq_Size + Sq_Size / 2, Finish.Y * Sq_Size + Sq_Size / 2, BlockID.Finish);
 
+			if (cts.IsCancellationRequested)
+				return;
+
             generateArt();
         }
         private void GenerateShell()
@@ -258,12 +281,18 @@ namespace Level_Generator_ConsoleUI
             {
                 for (int iY = 0; iY <= Sq_Size * Size; iY++)
                     Map.ReplaceBlock(iX * Sq_Size, iY, BlockID.BB0);
+
+				if (cts.IsCancellationRequested)
+					return;
             }
             for (int iY = 0; iY <= Size; iY++)
             {
                 for (int iX = 0; iX <= Sq_Size * Size; iX++)
                     Map.ReplaceBlock(iX, iY * Sq_Size, BlockID.BB0);
-            }
+
+				if (cts.IsCancellationRequested)
+					return;
+         }
         }
 
         // Used in generation
@@ -353,6 +382,9 @@ namespace Level_Generator_ConsoleUI
                 Y = R.Next(0, Size);
                 Map.ReplaceBlock(X * Sq_Size + 1, Y * Sq_Size, BlockID.Item);
                 Map.ReplaceBlock(X * Sq_Size + Sq_Size - 1, Y * Sq_Size, BlockID.Item);
+
+				if (cts.IsCancellationRequested)
+					return;
             }
             for (int i = 0; i < Happys; i++)
             {
@@ -360,6 +392,9 @@ namespace Level_Generator_ConsoleUI
                 Y = R.Next(0, Size);
                 Map.ReplaceBlock(X * Sq_Size + 1, Y * Sq_Size, BlockID.Happy);
                 Map.ReplaceBlock(X * Sq_Size + Sq_Size - 1, Y * Sq_Size, BlockID.Happy);
+
+				if (cts.IsCancellationRequested)
+					return;
             }
         }
 
@@ -463,6 +498,9 @@ namespace Level_Generator_ConsoleUI
                         str.Append(";" + Dig[D] + ",");
                     }
                 }
+
+				if (cts.IsCancellationRequested)
+					return;
             }
 
             // Green finish coordinates at start
