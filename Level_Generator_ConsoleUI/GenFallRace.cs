@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Newtonsoft.Json.Linq;
+
 using PR2_Level_Generator;
 
 namespace Level_Generator_ConsoleUI
@@ -31,13 +33,25 @@ namespace Level_Generator_ConsoleUI
 			parameters.Keys.CopyTo(ret, 0);
 			return ret;
 		}
-		public double GetParamValue(string name)
+		public string GetParamValue(string name)
 		{
-			return parameters[name];
+			if (parameters.ContainsKey(name))
+				return parameters[name].ToString();
+			else
+			{
+				Console.WriteLine("Parameter '" + name + "' not found.");
+				return double.NaN.ToString();
+			}
 		}
-		public void SetParamValue(string name, double value)
+		public bool SetParamValue(string name, string value)
 		{
-			parameters[name] = value;
+			if (double.TryParse(value, out double v))
+			{
+				parameters[name] = v;
+				return true;
+			}
+			else
+				return false;
 		}
 
 		#region "Parameters"
@@ -83,10 +97,10 @@ namespace Level_Generator_ConsoleUI
 		public int LastSeed { get; private set; }
 		private Random R;
 
-		public Task<bool> GenerateMap(CancellationTokenSource cts)
+		public Task<string> GenerateMap(CancellationTokenSource cts)
 		{
 			Map.ClearBlocks();
-			Map.artCodes[3] = "";
+			Map.artCodes[3] = new StringBuilder();
 
 			int rSeed = Seed;
 			if (rSeed == 0)
@@ -122,7 +136,7 @@ namespace Level_Generator_ConsoleUI
 				GenerateSection(i);
 
 				if (cts.IsCancellationRequested)
-					return Task.FromResult(false);
+					return Task.FromResult("generation timed out");
 			}
 
 			// Finish
@@ -135,7 +149,7 @@ namespace Level_Generator_ConsoleUI
 			}
 
 			Console.WriteLine("Map Generated.");
-			return Task.FromResult(true);
+			return Task.FromResult<string>(null);
 		}
 
 		private void GenerateSection(int i)
@@ -163,7 +177,7 @@ namespace Level_Generator_ConsoleUI
 				str += ";0;" + (Fall_Dist * 30 - 90);
 				if (Map.artCodes[3].Length != 0)
 					str = "," + str;
-				Map.artCodes[3] += str;
+				Map.artCodes[3].Append(str);
 			}
 
 			// Place safe blocks
@@ -188,16 +202,13 @@ namespace Level_Generator_ConsoleUI
 				Map.AddBlock(iX, y, 0);
 		}
 
-		public string GetSaveString()
+		public JObject GetSaveObject()
 		{
-			StringBuilder ret = new StringBuilder();
-			ret.Append(this.GetType().ToString());
+			JObject json = new JObject();
 			foreach (KeyValuePair<string, double> kvp in parameters)
-			{
-				ret.Append("\n" + kvp.Key + ":" + kvp.Value);
-			}
+				json[kvp.Key] = JToken.FromObject(kvp.Value);
 
-			return ret.ToString();
+			return json;
 		}
 
 	}

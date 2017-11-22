@@ -29,16 +29,20 @@ namespace Level_Generator_ConsoleUI
 				levelsPath = str[1];
 				generationManager.username = str[2];
 				generationManager.login_token = str[3];
+				LuaPath = str[4];
 			}
 			else
 			{ // Create directories for levels and settings
 				levelsPath = folderPath + "\\levels";
 				settingsPath = folderPath + "\\settings";
+				LuaPath = folderPath + "\\lua";
 
 				if (!Directory.Exists(levelsPath))
 					Directory.CreateDirectory(levelsPath);
 				if (!Directory.Exists(settingsPath))
 					Directory.CreateDirectory(settingsPath);
+				if (!Directory.Exists(LuaPath))
+					Directory.CreateDirectory(LuaPath);
 
 				SaveConfig();
 			}
@@ -48,11 +52,16 @@ namespace Level_Generator_ConsoleUI
 
 		public string settingsPath;
 		public string levelsPath;
+		private string LuaPath {
+			get => generationManager.luaPath;
+			set => generationManager.luaPath = value;
+		}
 		private string configPath;
 		private void SaveConfig()
 		{
 			string str = settingsPath + "\n" + levelsPath +
-				"\n" + generationManager.username + "\n" + generationManager.login_token;
+				"\n" + generationManager.username + "\n" + generationManager.login_token +
+				"\n" + LuaPath;
 			File.WriteAllText(configPath, str);
 		}
 
@@ -106,6 +115,7 @@ namespace Level_Generator_ConsoleUI
 			userCommands.Add("upload", UploadLevel);
 			userCommands.Add("set_levels_path", SetLevelsPath);
 			userCommands.Add("set_settings_path", SetSettingsPath);
+			userCommands.Add("set_lua_path", SetLuaPath);
 			userCommands.Add("get_paths", GetPaths);
 			userCommands.Add("save_settings", SaveSettings);
 			userCommands.Add("commands", GetCommandsList);
@@ -113,6 +123,7 @@ namespace Level_Generator_ConsoleUI
 			userCommands.Add("save", SaveLevel);
 			userCommands.Add("save_pr3", SaveLevelAsPR3);
 			userCommands.Add("load_settings", LoadSettings);
+			//userCommands.Add("test", TestCommand);
 		}
 
 		private string GetCommandsList(params string[] args)
@@ -217,11 +228,11 @@ namespace Level_Generator_ConsoleUI
 		private string GenerateLevel(params string[] args)
 		{
 			cts = new CancellationTokenSource(args.Length > 0 ? int.Parse(args[0]) : -1);
-			bool result = Generator.GenerateMap(cts).Result;
-			if (result)
-				return null;
+			string result = Generator.GenerateMap(cts).Result;
+			if (result == null)
+				return "Level generated.";
 			else
-				return "Generation was cancelled due to taking too long.";
+				return result;
 		}
 
 		private string SetToken(params string[] args)
@@ -327,10 +338,21 @@ namespace Level_Generator_ConsoleUI
 
 			return "Settings path set.";
 		}
+		private string SetLuaPath(params string[] args)
+		{
+			if (args.Length < 1)
+				return "Please give a folder path. E.g. '-set_settings_path C:\\lua'.";
+
+			LuaPath = Path.Combine(LuaPath, args[0]);
+			SaveConfig();
+
+			return "Lua path set.";
+		}
 		private string GetPaths(params string[] args)
 		{
 			return "Settings path: " + settingsPath +
-			  "\nLevels path: " + levelsPath;
+			  "\nLevels path: " + levelsPath +
+			  "\nLua path: " + LuaPath;
 		}
 		private string SaveSettings(params string[] args)
 		{
@@ -359,9 +381,11 @@ namespace Level_Generator_ConsoleUI
 			if (!File.Exists(path))
 				return "Failed to load settings; file does not exist.";
 
-			generationManager.LoadSettings(path);
-
-			return "Settings loaded.";
+			string result = generationManager.LoadSettings(path);
+			if (result == null)
+				return "Settings loaded.";
+			else
+				return result;
 		}
 		#endregion
 
